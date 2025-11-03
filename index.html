@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Putra Playlist — Music Player</title>
+<style>
+  :root {
+    --accent: #1db954;
+    --bg: #0e0e0f;
+    --card: #181818;
+    --text: #fff;
+    --text-muted: #aaa;
+  }
+
+  body.light {
+    --bg: #f9f9f9;
+    --card: #fff;
+    --text: #000;
+    --text-muted: #555;
+    --accent: #1db954;
+  }
+
+  body {
+    font-family: 'Poppins', sans-serif;
+    background-color: var(--bg);
+    color: var(--text);
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    transition: background 0.4s, color 0.4s;
+  }
+
+  header {
+    text-align: center;
+    padding: 20px;
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--accent);
+    position: relative;
+  }
+
+  #themeToggle {
+    position: absolute;
+    right: 20px;
+    top: 20px;
+    background: none;
+    border: none;
+    color: var(--text);
+    font-size: 1.5rem;
+    cursor: pointer;
+    transition: 0.3s;
+  }
+
+  #themeToggle:hover { color: var(--accent); }
+
+  .player {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 15px;
+  }
+
+  .cover {
+    width: 280px;
+    height: 280px;
+    border-radius: 18px;
+    object-fit: cover;
+    box-shadow: 0 0 25px rgba(0,0,0,0.5);
+    margin-bottom: 15px;
+  }
+
+  .title { font-size: 1.2rem; font-weight: bold; text-align: center; }
+  .artist { font-size: 0.9rem; color: var(--text-muted); text-align: center; }
+
+  .controls {
+    margin-top: 15px;
+    display: flex;
+    gap: 20px;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .controls button {
+    background: none;
+    border: none;
+    color: var(--text);
+    font-size: 1.7rem;
+    cursor: pointer;
+    transition: 0.3s;
+  }
+
+  .controls button:hover { color: var(--accent); }
+
+  .playlist {
+    background: var(--card);
+    padding: 10px;
+    flex: 1;
+    overflow-y: auto;
+  }
+
+  .track {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--bg);
+    border-radius: 12px;
+    margin-bottom: 6px;
+    padding: 6px 10px;
+    cursor: pointer;
+    transition: background 0.3s;
+  }
+
+  .track:hover { background: var(--accent); color: #fff; }
+
+  .track img {
+    width: 55px;
+    height: 55px;
+    border-radius: 10px;
+    margin-right: 10px;
+  }
+
+  .track-info { flex: 1; }
+  .track-title { font-size: 0.95rem; font-weight: 500; }
+  .track-artist { font-size: 0.8rem; color: var(--text-muted); }
+
+  .track-duration { font-size: 0.8rem; color: var(--text-muted); }
+
+  .fav-btn {
+    font-size: 1.3rem;
+    cursor: pointer;
+    color: var(--text-muted);
+    transition: 0.3s;
+  }
+
+  .fav-btn.active { color: var(--accent); }
+</style>
+</head>
+<body>
+
+<header>
+  🎵 Putra Music Player 🎶
+  <button id="themeToggle">🌙</button>
+</header>
+
+<div class="player">
+  <img id="cover" class="cover" src="" alt="Cover">
+  <div class="title" id="title"></div>
+  <div class="artist" id="artist"></div>
+
+  <div class="controls">
+    <button onclick="prevTrack()">⏮</button>
+    <button id="playPauseBtn" onclick="togglePlay()">▶️</button>
+    <button onclick="nextTrack()">⏭</button>
+  </div>
+
+  <iframe id="player" width="0" height="0" frameborder="0"
+    allow="autoplay; encrypted-media"></iframe>
+</div>
+
+<div class="playlist" id="playlist"></div>
+
+<script>
+const TRACKS = [
+  {id:'2HYaSzvwi4I', title:'DiBawah Batu Nisan Kini', artist:'By Putra Project'},
+  {id:'0SVaz8VWE84', title:'Selena Gomez - People You Know', artist:'By Putra Project'},
+  {id:'Y-VcLaZso5Q', title:'Yang Pertama Kali', artist:'By Putra Project'},
+  {id:'CcWiUbXkQMA', title:'Domba Kuring', artist:'By Putra Project'},
+  {id:'XY3-8xAeqYM', title:'Tabola Bale X Calon Mantu Idaman', artist:'By Putra Project'},
+  {id:'t5zEP084OVI', title:'Aku Mama Muda Memang Mama Muda', artist:'By Putra Project'},
+  {id:'3RmKNGI7DMA', title:'Cinta Merah Jambu', artist:'By Putra Project'},
+  {id:'HuoU7DpLN5E', title:'Tia Monika', artist:'By Putra Project'},
+  {id:'WZBQmGnh_dA', title:'Nona Ambon Pica Pica', artist:'By Putra Project'},
+  {id:'GAByuluHtTI', title:'Aku Dah Lupa', artist:'By Putra Project'},
+  {id:'g9MzCn8MnMg', title:'Kupu Kupu Terbang Melayang', artist:'By Putra Project'},
+  {id:'lXHiJ68DUUI', title:'Ada Yang Marah', artist:'By Putra Project'},
+  {id:'SoDed_2SN-8', title:'Ayo Sayang Culik Aku Dong', artist:'By Putra Project'},
+  {id:'WmcKU8Iwnqw', title:'Su Jauh Sa Tanam', artist:'By Putra Project'},
+  {id:'x9SzUoJei-U', title:'Aku Bukan Jodohnya', artist:'By Putra Project'},
+  {id:'Y76VJQ0wguc', title:'Saling Percaya', artist:'By Putra Project'},
+  {id:'qfChwOceAgQ', title:'Injit Injit Semut', artist:'By Putra Project'},
+  {id:'Z29_C7cJCMk', title:'Kalo Ada 9 Nyawa', artist:'By Putra Project'},
+  {id:'7TdakEquwWk', title:'Tor Monitor Ketua', artist:'By Putra Project'},
+  {id:'fknY2ysQ04Y', title:'Dola Dola Salah Kita Dola', artist:'By Putra Project}
+];
+
+let current = 0;
+let playing = false;
+let iframe = document.getElementById("player");
+let autoNextTimer = null;
+const favorites = new Set();
+
+// === THEME TOGGLE ===
+const themeToggle = document.getElementById("themeToggle");
+const savedTheme = localStorage.getItem("theme");
+if (savedTheme === "light") {
+  document.body.classList.add("light");
+  themeToggle.textContent = "🌞";
+}
+
+themeToggle.addEventListener("click", () => {
+  document.body.classList.toggle("light");
+  const isLight = document.body.classList.contains("light");
+  themeToggle.textContent = isLight ? "🌞" : "🌙";
+  localStorage.setItem("theme", isLight ? "light" : "dark");
+});
+
+// === MUSIC PLAYER ===
+function loadTrack(index) {
+  current = index;
+  const track = TRACKS[index];
+  iframe.src = `https://www.youtube.com/embed/${track.id}?autoplay=1&enablejsapi=1`;
+  document.getElementById("cover").src = `https://img.youtube.com/vi/${track.id}/hqdefault.jpg`;
+  document.getElementById("title").textContent = track.title;
+  document.getElementById("artist").textContent = track.artist;
+  playing = true;
+  document.getElementById("playPauseBtn").textContent = "⏸";
+
+  clearTimeout(autoNextTimer);
+  autoNextTimer = setTimeout(() => nextTrack(), 180000); // simulasi auto-next 3 menit
+}
+
+function togglePlay() {
+  if (playing) {
+    iframe.src = "";
+    playing = false;
+    document.getElementById("playPauseBtn").textContent = "▶️";
+  } else {
+    loadTrack(current);
+  }
+}
+
+function nextTrack() {
+  current = (current + 1) % TRACKS.length;
+  loadTrack(current);
+}
+
+function prevTrack() {
+  current = (current - 1 + TRACKS.length) % TRACKS.length;
+  loadTrack(current);
+}
+
+// === PLAYLIST ===
+const playlistDiv = document.getElementById("playlist");
+TRACKS.forEach((track, index) => {
+  const item = document.createElement("div");
+  item.className = "track";
+  item.innerHTML = `
+    <img src="https://img.youtube.com/vi/${track.id}/hqdefault.jpg" alt="${track.title}">
+    <div class="track-info">
+      <div class="track-title">${track.title}</div>
+      <div class="track-artist">${track.artist}</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div class="track-duration">--:--</div>
+      <div class="fav-btn" data-index="${index}">♡</div>
+    </div>
+  `;
+  item.addEventListener("click", (e) => {
+    if (!e.target.classList.contains('fav-btn')) {
+      loadTrack(index);
+    }
+  });
+  playlistDiv.appendChild(item);
+});
+
+// === FAVORITE ===
+playlistDiv.addEventListener("click", (e) => {
+  if (e.target.classList.contains("fav-btn")) {
+    const i = Number(e.target.dataset.index);
+    if (favorites.has(i)) {
+      favorites.delete(i);
+      e.target.classList.remove("active");
+      e.target.textContent = "♡";
+    } else {
+      favorites.add(i);
+      e.target.classList.add("active");
+      e.target.textContent = "❤️";
+    }
+  }
+});
+
+loadTrack(0);
+</script>
+</body>
+</html>
